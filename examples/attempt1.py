@@ -33,8 +33,8 @@ xmin = np.array([0. + dx[0] / 2., 0. + dx[1] / 2., 0. + dx[2] / 2.])
 xmax = np.array([Lx - dx[0] / 2., Ly - dx[1] / 2., Lz - dx[2] / 2.])
 
 # covairance kernel and scale parameters
-prior_std = 1.0
-prior_cov_scale = np.array([1., 1., 1.])
+prior_std =0.0001
+prior_cov_scale = np.array([0.0001, 0.0001, 0.0001])
 
 def kernel(r): return (prior_std ** 2) * np.exp(-r)
 
@@ -44,10 +44,10 @@ y = np.linspace(0. + dx[1] / 2., Ly - dx[1] / 2., N[1])
 XX, YY = np.meshgrid(x, y)
 pts = np.hstack((XX.ravel()[:, np.newaxis], YY.ravel()[:, np.newaxis]))
 
-inputDirectory = '/Users/mahtag2/Desktop/syn_inverse_guess/'
+inputDirectory = '/Users/mahtag2/syn_inverse_guess/'
 inputFileName = '2DCr.in'
 
-directory= '/Users/mahtag2/Desktop/syn_inverse_test' #directory of the Crunch ouptuts
+directory= '/Users/mahtag2/syn_inverse_test' #directory of the Crunch ouptuts
 perm=pyCrunch.getPerm(directory)
 #
 #permeability_x=perm2array(perm[0])[:,3]
@@ -59,22 +59,22 @@ s_true= pyCrunch.S2array(pyCrunch.getS(directory)[0])
  
 brk= pyCrunch.getBreakthroughFiles(directory)
 
-obs=[] #making an empty list of mean travel times
+obs_true=[] #making an empty list of mean travel times
 #we usually have multiple brk files so we need to bring them all in!
 for file in brk:
     
-    obs.append(pyCrunch.getMeanTravelTime(pyCrunch.brk2array(file)))
+    obs_true.append(pyCrunch.getMeanTravelTime(pyCrunch.brk2array(file)))
     
-obs=np.array(obs)
+obs_true=np.array(obs_true)
 
 
 
 def forward_model(s_true,par,ncores = None):
     if par == True:
         raise ValueError("This crunchflow forward model does not support parallelization.")
-    inputDirectory = '/Users/mahtag2/Desktop/syn_inverse_guess/'
+    inputDirectory = '/Users/mahtag2/syn_inverse_guess/'
     inputFileName = '2DCr.in'
-    directory= '/Users/mahtag2/Desktop/syn_inverse_test' #directory of the Crunch ouptuts
+    directory= '/Users/mahtag2/syn_inverse_test' #directory of the Crunch ouptuts
     # Update make a new permeability files from s before running crunch
     pyCrunch.runCrunch(inputDirectory,inputFileName)
     bk= pyCrunch.getBreakthroughFiles(directory)
@@ -93,10 +93,14 @@ def forward_model(s_true,par,ncores = None):
     return simul_obs
 
 
-s_init = np.copy(s_true) # you can try with s_true!
-s_init = s_init.reshape((s_init.shape[0],1))
+##s_init = np.copy(s_true) # you can try with s_true!
+##s_init = s_init.reshape((s_init.shape[0],1))
+    
+s_true = s_true.reshape((s_true.shape[0],1))
+s_init = np.ones((m, 1))
 
-params = {'R': (0.5) ** 2, 'n_pc': 5,
+
+params = {'R': (0.5) ** 10, 'n_pc': 5,
           'maxiter': 10, 'restol': 0.01,
           'matvec': 'FFT', 'xmin': xmin, 'xmax': xmax, 'N': N,
           'prior_std': prior_std, 'prior_cov_scale': prior_cov_scale,
@@ -107,7 +111,7 @@ params = {'R': (0.5) ** 2, 'n_pc': 5,
           'iter_save': True}
 
 ## initialize
-pcga = PCGA(forward_model, s_init, pts, params, s_true, obs)
+pcga = PCGA(forward_model, s_init, pts, params, s_true, obs_true)
 #out = pcga.CreateSyntheticData (s_true, noise = False)
 
 
