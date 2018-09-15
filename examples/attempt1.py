@@ -7,7 +7,6 @@ Created on Fri Aug 17 15:23:36 2018
 """
 
 import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from pyPCGA import PCGA
@@ -24,7 +23,6 @@ for file in files:
 
 # model domain and discretization
 Lx = 5.; Ly = 5.; Lz = 1; nlay = 1; nrow = 10; ncol = 12
-#ztop = 0.; zbot = -1
 
 N = np.array([ncol, nrow, nlay])
 m = np.prod(N) #multiply*
@@ -44,70 +42,59 @@ y = np.linspace(0. + dx[1] / 2., Ly - dx[1] / 2., N[1])
 XX, YY = np.meshgrid(x, y)
 pts = np.hstack((XX.ravel()[:, np.newaxis], YY.ravel()[:, np.newaxis]))
 
-inputDirectory = '/Users/mahtag2/syn_inverse_guess/'
-inputFileName = '2DCr.in'
-
 directory= '/Users/mahtag2/syn_inverse_test' #directory of the Crunch ouptuts
-perm=pyCrunch.getPerm(directory)
+guessDirectory = '/Users/mahtag2/syn_inverse_guess/'
+s_true= pyCrunch.getS(directory)
+s_init = pyCrunch.getS(guessDirectory)
+obs_true = pyCrunch.getMeanTravelTimes(directory)
+
 #
-#permeability_x=perm2array(perm[0])[:,3]
-#permeability_y=perm2array(perm[0])[:,4]
+#obs_true=[] #making an empty list of mean travel times
+##we usually have multiple brk files so we need to bring them all in!
+#for file in brk:
+#    
+#    obs_true.append(pyCrunch.getMeanTravelTime(pyCrunch.brk2array(file)))
+#    
+#obs_true=np.array(obs_true)
 
-s_true= pyCrunch.S2array(pyCrunch.getS(directory)[0])
-#!s_true = sss.reshape(-1, 1)  # make it 2D array
-
- 
-brk= pyCrunch.getBreakthroughFiles(directory)
-
-obs_true=[] #making an empty list of mean travel times
-#we usually have multiple brk files so we need to bring them all in!
-for file in brk:
-    
-    obs_true.append(pyCrunch.getMeanTravelTime(pyCrunch.brk2array(file)))
-    
-obs_true=np.array(obs_true)
+crunch = pyCrunch.CrunchRun(
+        initialInputDirectory=guessDirectory,
+        inputFileName = '2DCr.in',
+        workingDirectory='/Users/mahtag2/syn_inverse_wd/',
+        libraryPath="/Users/mahtag2/Desktop/CrunchTope/libs"
+        )
 
 
-
-def forward_model(s_true,par,ncores = None):
+def forward_model(s, par,ncores = None):
+    print("entering pycrunch forward model")
     if par == True:
         raise ValueError("This crunchflow forward model does not support parallelization.")
-    inputDirectory = '/Users/mahtag2/syn_inverse_guess/'
-    inputFileName = '2DCr.in'
-    directory= '/Users/mahtag2/syn_inverse_test' #directory of the Crunch ouptuts
     # Update make a new permeability files from s before running crunch
-    pyCrunch.runCrunch(inputDirectory,inputFileName)
-    bk= pyCrunch.getBreakthroughFiles(directory)
-
-    obs_s=[] #making an empty list of mean travel times
-# #we usually have mulptiple brk files so we need to bring them all in!
-    for file in bk:
-        obs_s.append(pyCrunch.getMeanTravelTime(pyCrunch.brk2array(file)))
-    simul_obs=np.array(obs_s)
-    
-    
-    Old_s=pyCrunch.getS(directory)
-    assert len(Old_s) == 1
-    k = pyCrunch.S2array(Old_s[0])
-    np.savetxt(os.path.join(directory,'PermField.x'),k)
+    retVals = []
+    for i in range(s.shape[1]):
+        print("Running forward model iteration ", i+1, " of ", s.shape[1])
+        perm = s[:,i]
+        pyCrunch.generatePermeabilityFile(perm, crunch.workingDirectory)
+        crunch.run(verbose = False)
+        retVals.append(pyCrunch.getMeanTravelTimes(crunch.workingDirectory))
+    simul_obs = np.array(retVals).T
     return simul_obs
 
 
 ##s_init = np.copy(s_true) # you can try with s_true!
 ##s_init = s_init.reshape((s_init.shape[0],1))
     
-s_true = s_true.reshape((s_true.shape[0],1))
-s_init = np.ones((m, 1))
 
 
-params = {'R': (0.5) ** 10, 'n_pc': 5,
+
+params = {'R': (0.5) ** 10, 'n_pc': 6,
           'maxiter': 10, 'restol': 0.01,
           'matvec': 'FFT', 'xmin': xmin, 'xmax': xmax, 'N': N,
           'prior_std': prior_std, 'prior_cov_scale': prior_cov_scale,
           'kernel': kernel, 'post_cov': "diag",
           'precond': True, 'LM': True,
           'parallel': False, 'linesearch': True,
-          'forward_model_verbose': False, 'verbose': False,
+          'forward_model_verbose': True, 'verbose': False,
           'iter_save': True}
 
 ## initialize
