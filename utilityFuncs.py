@@ -28,6 +28,7 @@ def getBreakthroughFiles(directory):
 #converting the files to array
 def brk2array(fileName):
     return np.genfromtxt(fileName,delimiter = [27,23],skip_header=2)# works like importer function in MATLab
+    return np.loadtxt(fileName,skiprows=2)# works like importer function in MATLab
 
 def getMeanTravelTimes(directory):
     '''Get and sort the list of the breakthrough files in the working directory'''
