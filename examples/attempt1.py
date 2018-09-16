@@ -72,10 +72,14 @@ def forward_model(s, par,ncores = None):
     # Update make a new permeability files from s before running crunch
     retVals = []
     for i in range(s.shape[1]):
-        print("Running forward model iteration ", i+1, " of ", s.shape[1])
+        print("Running forward model iteration ", i+1, " of ", s.shape[1], "Datalength: ", s.shape[0])
         perm = s[:,i]
-        pyCrunch.generatePermeabilityFile(perm, crunch.workingDirectory)
-        crunch.run(verbose = False)
+        pyCrunch.generatePermeabilityFile(perm, crunch.workingDirectory, "PermField.x")
+        perm2 = perm * 1
+        perm2[:10] = 0
+        perm2[-10:] = 0
+        pyCrunch.generatePermeabilityFile(perm2, crunch.workingDirectory, "PermField.y")
+        crunch.run(verbose = True)
         retVals.append(pyCrunch.getMeanTravelTimes(crunch.workingDirectory))
     simul_obs = np.array(retVals).T
     return simul_obs
