@@ -98,8 +98,8 @@ def generateInputFile(outputPath,templatePath, d):#output path: directory of the
             newline = str.join(' ',newline) #this will add back the white spaces to the line so that crunch could read it.      
             print(newline)#this will actually overwrite the values in the input file
 
-def generatePermeabilityFile(s: np.ndarray, outputPath: str) -> None:
-    path = os.path.join(outputPath, "PermField.x")
+def generatePermeabilityFile(s: np.ndarray, outputPath: str, fileName:str) -> None:
+    path = os.path.join(outputPath, fileName)
     s = s.squeeze()
     assert len(s.shape) == 1
     np.savetxt(path,s)
