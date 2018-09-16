@@ -137,15 +137,13 @@ class CrunchRun:
         cmd = 'export DYLD_LIBRARY_PATH=' + self.libraryPath + '&&' + crunchPath + ' ' + os.path.join(self.workingDirectory, self.inputFileName)
         #'export DYLD_LIBRARY_PATH=' works as source .bashrc in terminal. It is needed so that crunch can find the other libraries it needs.
         # && combines the two commmands on a single line. Add DYLD libraries to the environment and then running crunch with the name of the input file
-        currentDirectory = os.getcwd()
-        os.chdir(self.workingDirectory)
-        proc = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE, stderr= subprocess.PIPE)# subprocess execute the above command.
+        proc = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE, stderr= subprocess.PIPE, cwd = self.workingDirectory)# subprocess execute the above command.
         # stdout gets the output from the run, stderr gets the possible errors.
+        if verbose:
+            for l in proc.stdout:
+                print(l.decode())
         msg = proc.communicate() #communicate is when we need to see the outputs! This blocks until crunchflow completes
         #I took out the timeout=10 because Crunch would take much longer 
-        os.chdir(currentDirectory)
-        if verbose:
-            print(msg[0].decode())#to make the output look like terminal output
         if msg[1] != b'':
             raise RuntimeError("Crunchflow returned the following error: ", msg[1].decode())
             #importing brk files,it is important to have them sorted
