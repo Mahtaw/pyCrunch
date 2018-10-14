@@ -120,14 +120,16 @@ def fromPermtoPCGATrue(inPath,outPath):
     outPerm = np.log(10**inPerm) #PCGA wants it's true permeability value as the natural log.
     np.savetxt(outPath, outPerm)
 
+
 class CrunchRun:
     def __init__(self, initialInputDirectory, inputFileName, workingDirectory, libraryPath ):
-        if os.path.exists(workingDirectory):
-            if input("The working directory: {} already exists. Do you want to overwrite? (y/n)".format(workingDirectory)).strip().lower() == 'y':
-                shutil.rmtree(workingDirectory)
-            else:
-                raise RuntimeError("Execution Cancelled")
-        shutil.copytree(initialInputDirectory, workingDirectory)
+        if not (initialInputDirectory == workingDirectory): #The working directory needs to be initialized
+            if os.path.exists(workingDirectory):
+                if input("The working directory: {} already exists. Do you want to overwrite? (y/n)".format(workingDirectory)).strip().lower() == 'y':
+                    shutil.rmtree(workingDirectory)
+                else:
+                    raise RuntimeError("Execution Cancelled")
+            shutil.copytree(initialInputDirectory, workingDirectory)
         self.inputFileName = inputFileName
         self.libraryPath = libraryPath
         self.workingDirectory = workingDirectory
@@ -146,7 +148,7 @@ class CrunchRun:
         # stdout gets the output from the run, stderr gets the possible errors.
         if verbose:
             for l in proc.stdout:
-                print(l.decode())
+                print(l.decode()[:-1])
         msg = proc.communicate() #communicate is when we need to see the outputs! This blocks until crunchflow completes
         #I took out the timeout=10 because Crunch would take much longer 
         if msg[1] != b'':
