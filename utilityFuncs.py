@@ -115,6 +115,11 @@ def dbsPopulater (outputPath,templatePath):
         else:
             print("it already exists!")
             
+def fromPermtoPCGATrue(inPath,outPath):
+    inPerm = np.genfromtxt(inPath) #the log10 permeability from a crunchflowrun
+    outPerm = np.log(10**inPerm) #PCGA wants it's true permeability value as the natural log.
+    np.savetxt(outPath, outPerm)
+
 class CrunchRun:
     def __init__(self, initialInputDirectory, inputFileName, workingDirectory, libraryPath ):
         if os.path.exists(workingDirectory):
